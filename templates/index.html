@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        {% for i in range(stream_count) %}
+            <div>
+                <img src="{{ url_for('video_source', index=i) }}">
+            </div>
+        {% endfor %}
+    </body>
+</html>

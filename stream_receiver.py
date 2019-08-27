@@ -12,6 +12,7 @@ class StreamReceiver:
         self.img = None
         self.port = port
         self._last_access = 0
+        self._event = threading.Event()
         print('Stream receiver initialized with port {}'.format(self.port))
 
     def get_img(self):
@@ -22,6 +23,8 @@ class StreamReceiver:
             self.thread.start()
             while self.img is None:
                 time.sleep(0.1)
+        self._event.wait()
+        self._event.clear()
         return self.img
 
     def _receive(self):
@@ -34,7 +37,7 @@ class StreamReceiver:
             bytes_array = bytes()
             with conn:
                 print('Receiving Stream from {} on port {}'.format(addr, self.port))
-                while EventSystem.send_event.is_set() and not time.time() - self._last_access > 3:
+                while EventSystem.send_event.is_set() and not time.time() - self._last_access > 5:
                     chunk = conn.recv(1024)
                     if not chunk:
                         print('No data, exiting')
@@ -46,6 +49,8 @@ class StreamReceiver:
                         jpg = bytes_array[a:b + 2]
                         bytes_array = bytes_array[b + 2:]
                         self.img = jpg
+                        self._event.set()
+
         print('Exiting Receive thread on port {}'.format(self.port))
         self.thread = None
         self.img = None

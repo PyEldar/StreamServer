@@ -28,6 +28,7 @@ class StreamEndApp(Flask):
             self.trigger_server.start_data_port + index
         )
         while True:
+            print('Showing image to web client')
             img = receiver.get_img()
             yield (b'--jpg\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + img + b'\r\n')

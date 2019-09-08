@@ -44,6 +44,7 @@ class StreamReceiver:
                     jpg = bytes_array[a:b + 2]
                     bytes_array = bytes_array[b + 2:]
                     self.img = jpg
+                    print("Got Image")
                     self._event.set()
 
         print('Exiting Receive thread on port {}'.format(self.port))

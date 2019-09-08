@@ -36,6 +36,7 @@ class StreamReceiver:
             conn, addr = data_socket.accept()
             bytes_array = bytes()
             with conn:
+                conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
                 print('Receiving Stream from {} on port {}'.format(addr, self.port))
                 while EventSystem.send_event.is_set() and not time.time() - self._last_access > 5:
                     chunk = conn.recv(1024)

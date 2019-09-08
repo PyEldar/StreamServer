@@ -24,34 +24,38 @@ class TriggerServer:
         EventSystem.send_event.clear()
 
     def run(self):
-        with socket.socket() as trigger_socket:
-            trigger_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            trigger_socket.bind(('0.0.0.0', self.port))
-            trigger_socket.listen(5)
-            print('Waiting for trigger connection on {}'.format(self.port))
-            conn, addr = trigger_socket.accept()
-            with conn:
-                while True:
-                    print('Waiting for send event')
-                    while not EventSystem.send_event.is_set():
-                        if self._stop_event.is_set():
-                            print("Exiting trigger server")
-                            return
-                        time.sleep(0.1)
-                    print('triggering stream upload')
-                    conn.send(b'send_data')
-                    self.streams_count = conn.recv(10)
-                    print('received stream count: {}'.format(self.streams_count))
-                    conn.send(str(self.start_data_port).encode())
-                    print('Waiting for event clear')
-                    while EventSystem.send_event.is_set():
-                        if self._stop_event.is_set():
-                            print("Exiting trigger server")
-                            return
-                        time.sleep(0.1)
-                    conn.send(b'close_data')
-                    self.streams_count = None
-                    print('Closed sent')
+        while not self._stop_event.is_set():
+            try:
+                with socket.socket() as trigger_socket:
+                    trigger_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    trigger_socket.bind(('0.0.0.0', self.port))
+                    trigger_socket.listen(5)
+                    print('Waiting for trigger connection on {}'.format(self.port))
+                    conn, addr = trigger_socket.accept()
+                    with conn:
+                        while True:
+                            print('Waiting for send event')
+                            while not EventSystem.send_event.is_set():
+                                if self._stop_event.is_set():
+                                    print("Exiting trigger server")
+                                    return
+                                time.sleep(0.1)
+                            print('triggering stream upload')
+                            conn.send(b'send_data')
+                            self.streams_count = conn.recv(10)
+                            print('received stream count: {}'.format(self.streams_count))
+                            conn.send(str(self.start_data_port).encode())
+                            print('Waiting for event clear')
+                            while EventSystem.send_event.is_set():
+                                if self._stop_event.is_set():
+                                    print("Exiting trigger server")
+                                    return
+                                time.sleep(0.1)
+                            conn.send(b'close_data')
+                            self.streams_count = None
+                            print('Closed sent')
+            finally:
+                self.streams_count = None
 
     def start(self):
         threading.Thread(target=self.run).start()

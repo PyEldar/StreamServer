@@ -28,29 +28,23 @@ class StreamReceiver:
         return self.img
 
     def _receive(self):
-        with socket.socket() as data_socket:
-            data_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        with socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM) as data_socket:
             data_socket.bind(('0.0.0.0', self.port))
-            data_socket.listen(5)
             print('Waiting for connection on {}'.format(self.port))
-            conn, addr = data_socket.accept()
             bytes_array = bytes()
-            with conn:
-                conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
-                print('Receiving Stream from {} on port {}'.format(addr, self.port))
-                while EventSystem.send_event.is_set() and not time.time() - self._last_access > 5:
-                    chunk = conn.recv(8192)
-                    if not chunk:
-                        print('No data, exiting')
-                        break
-                    bytes_array += chunk
-                    a = bytes_array.find(b'\xff\xd8')
-                    b = bytes_array.find(b'\xff\xd9')
-                    if a != -1 and b != -1:
-                        jpg = bytes_array[a:b + 2]
-                        bytes_array = bytes_array[b + 2:]
-                        self.img = jpg
-                        self._event.set()
+            while EventSystem.send_event.is_set() and not time.time() - self._last_access > 5:
+                chunk, addr = data_socket.recvfrom(8192)
+                if not chunk:
+                    print('No data, exiting')
+                    break
+                bytes_array += chunk
+                a = bytes_array.find(b'\xff\xd8')
+                b = bytes_array.find(b'\xff\xd9')
+                if a != -1 and b != -1:
+                    jpg = bytes_array[a:b + 2]
+                    bytes_array = bytes_array[b + 2:]
+                    self.img = jpg
+                    self._event.set()
 
         print('Exiting Receive thread on port {}'.format(self.port))
         self.thread = None
